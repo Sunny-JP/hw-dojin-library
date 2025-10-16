@@ -1,0 +1,54 @@
+services:
+  # Next.jsアプリケーション
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: doujin-app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./app:/app  # ローカルのappフォルダをコンテナに同期
+      - /app/node_modules # node_modulesは同期対象から除外
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - storage
+    networks:
+      - doujin-net
+
+  # PostgreSQLデータベース
+  db:
+    image: postgres:17-alpine
+    container_name: doujin-db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    networks:
+      - doujin-net
+
+  # MinIO (S3互換ストレージ)
+  storage:
+    image: minio/minio:latest
+    container_name: doujin-storage
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    env_file:
+      - .env
+    ports:
+      - "9000:9000"  # API用ポート
+      - "9001:9001"  # 管理画面用ポート
+    networks:
+      - doujin-net
+
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  doujin-net:
