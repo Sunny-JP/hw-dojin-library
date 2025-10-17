@@ -8,8 +8,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./app:/app  # ローカルのappフォルダをコンテナに同期
-      - /app/node_modules # node_modulesは同期対象から除外
+      - ./app:/app
+      - /app/node_modules
     env_file:
       - .env
     depends_on:
@@ -24,6 +24,7 @@ services:
     container_name: doujin-db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
     env_file:
       - .env
     ports:

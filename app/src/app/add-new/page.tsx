@@ -69,6 +69,9 @@ export default function AddNewPage() {
         <button type="submit">Add Doujinshi</button>
       </form>
       {message && <p>{message}</p>}
+      <a href="/" style={{ display: 'inline-block', marginBottom: '20px' }}>
+        → Back to Home
+      </a>
     </div>
   );
 }
