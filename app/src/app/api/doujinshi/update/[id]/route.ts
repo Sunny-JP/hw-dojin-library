@@ -1,9 +1,5 @@
-import { Pool } from 'pg';
+import { sql } from '@/lib/db';
 import { NextResponse } from 'next/server';
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
 
 export async function PUT(
   request: Request,
@@ -16,23 +12,20 @@ export async function PUT(
   const genresArray = genres.split(',').map((g: string) => g.trim());
 
   try {
-    const query = `
+    const [updatedDoujinshi] = await sql`
       UPDATE "Doujinshi"
       SET 
-        "title" = $1, 
-        "circle" = $2,
-        "authors" = $3, 
-        "genres" = $4, 
-        "publishedDate" = $5,
+        "title" = ${title}, 
+        "circle" = ${circle}, 
+        "authors" = ${authorsArray}, 
+        "genres" = ${genresArray}, 
+        "publishedDate" = ${new Date(publishedDate)},
         "updatedAt" = NOW()
-      WHERE "id" = $5
+      WHERE "id" = ${id}
       RETURNING *;
     `;
-    const values = [title, circle, authorsArray, genresArray, new Date(publishedDate), id];
     
-    const { rows } = await pool.query(query, values);
-
-    return NextResponse.json(rows[0]);
+    return NextResponse.json(updatedDoujinshi);
   } catch (error) {
     console.error('Failed to update doujinshi:', error);
     return NextResponse.json({ message: 'Database error' }, { status: 500 });

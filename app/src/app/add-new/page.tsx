@@ -1,4 +1,4 @@
-import AddDoujinshiForm from '@/app/components/AddDoujinshiForm';
+import AddDoujinshiForm from '@/components/AddDoujinshiForm';
 
 export default function AddNewPage() {
   return (

@@ -1,8 +1,9 @@
-import { getDoujinshiList } from '@/app/lib/data'; // Corrected path
-import DoujinshiList from '@/app/components/DoujinshiList'; // Import the new component
+import { getDoujinshiList } from '@/lib/data';
+import type { DoujinshiFromDB } from '@/lib/data';
+import BookshelfView from '@/components/BookshelfView';
 
 export default async function HomePage() {
-  let doujinshiList = [];
+  let doujinshiList: DoujinshiFromDB[] = []; 
   try {
     doujinshiList = await getDoujinshiList();
   } catch (error) {
@@ -10,17 +11,18 @@ export default async function HomePage() {
   }
 
   return (
-    <main style={{ padding: '20px', maxWidth: '800px', margin: 'auto' }}>
-      <h1>所持同人誌一覧</h1>
-      <a href="/add-new" style={{ display: 'inline-block', marginBottom: '20px' }}>
-        → 新規登録はこちら
-      </a>
+    <main style={{ padding: '20px', maxWidth: '1200px', margin: 'auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h1>所持同人誌一覧</h1>
+        <a href="/add-new" style={{ /* スタイルは適宜調整 */ }}>
+          → 新規登録はこちら
+        </a>
+      </div>
       
       {doujinshiList.length === 0 ? (
         <p>まだ登録されている同人誌はありません。</p>
       ) : (
-        // Use the new Client Component to display the list
-        <DoujinshiList initialDoujinshi={doujinshiList} />
+        <BookshelfView items={doujinshiList} />
       )}
     </main>
   );

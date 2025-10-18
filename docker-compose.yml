@@ -14,7 +14,7 @@ services:
       - .env
     depends_on:
       - db
-      - storage
+      - minio-init
     networks:
       - doujin-net
 
@@ -46,6 +46,20 @@ services:
       - "9001:9001"  # 管理画面用ポート
     networks:
       - doujin-net
+  
+  minio-init:
+    image: minio/mc
+    container_name: minio-init
+    depends_on:
+      - storage # storage(MinIO)が起動してから実行する
+    networks:
+      - doujin-net
+    env_file:
+      - .env # .envファイルから変数を読み込む
+    volumes:
+      - ./minio-init:/init # 作成したスクリプトをコンテナにマウント
+    entrypoint: /bin/sh
+    command: -c " chmod +x /init/create-bucket.sh; /init/create-bucket.sh "
 
 volumes:
   postgres_data:

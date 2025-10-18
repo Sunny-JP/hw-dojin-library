@@ -3,26 +3,24 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-// Doujinshiの型定義
-type Doujinshi = {
-  id?: string;
+type FormInputData = {
+  id: string;
   title: string;
+  authors: string; // 著者はカンマ区切りの「文字列」
   circle?: string;
-  authors: string | string[];
-  genres: string | string[];
+  genres: string;  // ジャンルもカンマ区切りの「文字列」
   publishedDate: string;
 };
 
 // コンポーネントが受け取るPropsの型定義
 type FormProps = {
-  // 編集モードの場合、ここに初期データが入る
-  initialData?: Doujinshi; 
+  initialData?: FormInputData; 
 };
 
 export default function AddDoujinshiForm({ initialData }: FormProps) {
   // initialDataがあれば編集モード、なければ新規モード
   const isEditMode = !!initialData;
-
+  const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [circle, setCircle] = useState('');
   const [authors, setAuthors] = useState('');
@@ -36,8 +34,8 @@ export default function AddDoujinshiForm({ initialData }: FormProps) {
     if (initialData) {
       setTitle(initialData.title);
       setCircle(initialData.circle || '');
-      setAuthors(initialData.authors as string);
-      setGenres(initialData.genres as string);
+      setAuthors(initialData.authors);
+      setGenres(initialData.genres);
       setPublishedDate(initialData.publishedDate);
     }
   }, [initialData]);
@@ -46,16 +44,24 @@ export default function AddDoujinshiForm({ initialData }: FormProps) {
     e.preventDefault();
     setMessage(isEditMode ? '更新中...' : '登録中...');
 
-    // APIのURLとHTTPメソッドをモードによって切り替える
-    const apiUrl = isEditMode 
-      ? `/api/doujinshi/update/${initialData?.id}` 
-      : '/api/doujinshi/create';
-    const method = isEditMode ? 'PUT' : 'POST';
+    // FormDataを作成
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('circle', circle);
+    formData.append('authors', authors);
+    formData.append('genres', genres);
+    formData.append('publishedDate', publishedDate);
+    if (thumbnail) {
+      formData.append('thumbnail', thumbnail);
+    }
+
+// APIのURLとメソッド (ここはまだCreateのみ対応)
+    const apiUrl = '/api/doujinshi/create';
+    const method = 'POST';
 
     const response = await fetch(apiUrl, {
       method: method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, circle, authors, genres, publishedDate }),
+      body: formData,
     });
 
     if (response.ok) {
@@ -74,7 +80,15 @@ export default function AddDoujinshiForm({ initialData }: FormProps) {
       <input type="text" placeholder="作者 (カンマ区切り)" value={authors} onChange={(e) => setAuthors(e.target.value)} required />
       <input type="text" placeholder="ジャンル (カンマ区切り)" value={genres} onChange={(e) => setGenres(e.target.value)} />
       <input type="date" value={publishedDate} onChange={(e) => setPublishedDate(e.target.value)} required max="9999-12-31" />
-      
+      <div>
+        <label htmlFor="thumbnail">サムネイル画像</label>
+        <input 
+          type="file" 
+          id="thumbnail"
+          accept="image/*"
+          onChange={(e) => setThumbnail(e.target.files ? e.target.files[0] : null)}
+        />
+      </div>
       {/* ボタンのテキストをモードによって切り替える */}
       <button type="submit">{isEditMode ? '更新する' : '登録する'}</button>
       {message && <p>{message}</p>}
