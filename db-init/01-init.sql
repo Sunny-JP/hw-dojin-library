@@ -1,7 +1,8 @@
 CREATE TABLE "Doujinshi" (
     "id"            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "title"         TEXT NOT NULL,
-    "author"        TEXT NOT NULL,
+    "circle"        TEXT,
+    "authors"       TEXT[],
     "genres"        TEXT[],
     "publishedDate" TIMESTAMPTZ NOT NULL,
     "thumbnailUrl"  TEXT,

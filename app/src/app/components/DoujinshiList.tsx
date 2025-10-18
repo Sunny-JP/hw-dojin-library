@@ -37,11 +37,17 @@ export default function DoujinshiList({ initialDoujinshi }: { initialDoujinshi: 
           <h2>{doujinshi.title}</h2>
           <p><strong>作者:</strong> {doujinshi.author}</p>
           <p><strong>ジャンル:</strong> {doujinshi.genres.join(', ')}</p>
-          <p><strong>頒布日:</strong> {new Date(doujinshi.publishedDate).toLocaleDateString()}</p>
-          
+          <p><strong>頒布日:</strong> {doujinshi.publishedDate}</p>
+          <a 
+            href={`/edit/${doujinshi.id}`}
+            style={{ position: 'absolute', top: '50px', right: '10px', background: 'blue', color: 'white', padding: '5px 10px', textDecoration: 'none', borderRadius: '5px' }}
+          >
+            編集
+          </a>
+        
           <button 
             onClick={() => handleDelete(doujinshi.id)}
-            style={{ position: 'absolute', top: '10px', right: '10px', background: 'red', color: 'white', border: 'none', cursor: 'pointer' }}
+            style={{ position: 'absolute', top: '10px', right: '10px', background: 'red', color: 'white', border: 'none', cursor: 'pointer', padding: '5px 10px', borderRadius: '5px' }}
           >
             削除
           </button>
