@@ -29,6 +29,8 @@ export async function deleteItemsAction(ids: string[]) {
 
 const BUCKET_NAME = process.env.MINIO_BUCKET_NAME!;
 const MINIO_PUBLIC_ENDPOINT = process.env.MINIO_PUBLIC_ENDPOINT!;
+const COMPRESSION_WIDTH = parseInt(process.env.IMAGE_COMPRESSION_WIDTH || '1000', 10);
+const WEBP_QUALITY = parseInt(process.env.IMAGE_WEBP_QUALITY || '75', 10);
 
 /**
  * 新しいアイテムを作成するサーバーアクション
@@ -47,8 +49,11 @@ export async function createItemAction(formData: FormData) {
     if (thumbnail && thumbnail.size > 0) {
       const imageBuffer = await thumbnail.arrayBuffer();
       const compressedImage = await sharp(Buffer.from(imageBuffer))
-        .resize(400, null, { fit: 'inside' })
-        .webp({ quality: 80 })
+        .resize(COMPRESSION_WIDTH, null, { 
+          fit: 'inside', 
+          withoutEnlargement: true
+        })
+        .webp({ quality: WEBP_QUALITY })
         .toBuffer();
       const filename = `${crypto.randomUUID()}.webp`;
       const putCommand = new PutObjectCommand({
@@ -79,8 +84,6 @@ export async function createItemAction(formData: FormData) {
     return { error: '新規アイテムの作成に失敗しました。' };
   }
 }
-
-// --- ▼▼▼ 以下を新しく追記 ▼▼▼ ---
 
 /**
  * 既存のアイテムを更新するサーバーアクション
@@ -116,8 +119,11 @@ export async function updateItemAction(formData: FormData) {
     if (thumbnail && thumbnail.size > 0) {
       const imageBuffer = await thumbnail.arrayBuffer();
       const compressedImage = await sharp(Buffer.from(imageBuffer))
-        .resize(400, null, { fit: 'inside' })
-        .webp({ quality: 80 })
+        .resize(COMPRESSION_WIDTH, null, { 
+          fit: 'inside', 
+          withoutEnlargement: true
+        })
+        .webp({ quality: WEBP_QUALITY })
         .toBuffer();
       
       const filename = `${crypto.randomUUID()}.webp`;

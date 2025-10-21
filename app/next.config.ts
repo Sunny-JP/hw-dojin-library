@@ -7,9 +7,15 @@ const nextConfig: NextConfig = {
         protocol: 'http',
         hostname: 'host.docker.internal',
         port: '9000',
-        pathname: `/${process.env.MINIO_BUCKET_NAME}/**`,
+        pathname: `/${process.env.MINIO_BUCKET_NAME || 'doujinshi-thumbnails'}/**`,
       },
     ],
+  },
+
+  experimental: {
+    serverActions: {
+      bodySizeLimit: (process.env.SERVER_ACTION_BODY_LIMIT || '1mb') as any,
+    },
   },
 };
 
