@@ -3,7 +3,8 @@
 import { useState, useEffect, useTransition, useRef } from 'react';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Trash2, X, FileEdit, CheckSquare, Square, Plus, ClipboardPlus, Search, Tags } from 'lucide-react';
+import Link from 'next/link';
+import { Trash2, X, FileEdit, CheckSquare, Square, Plus, ClipboardPlus, Search, Tags, Home, Users, Library } from 'lucide-react';
 import { deleteItemsAction, createItemAction, updateItemAction } from '@/lib/actions';
 
 // --- Types ---
@@ -20,6 +21,7 @@ type BookshelfProps = {
   items: Doujinshi[];
   currentSearch: string;
   currentGenres: string[];
+  pageTitle?: string;
 };
 
 // --- Detail Modal ---
@@ -60,8 +62,19 @@ const DetailModal = ({ item, onClose, onEdit, onDelete, onTagClick }: {
           <div className="w-2/3 p-3 flex flex-col flex-grow overflow-y-auto">
             <h2 className="text-base font-bold mb-1.5 text-gray-900 dark:text-white leading-tight">{item.title}</h2>
             <div className="space-y-1 text-xs text-gray-700 dark:text-gray-300 mb-3">
-              <p><strong>サークル:</strong> {item.circle || '情報なし'}</p>
-              <p><strong>作家:</strong> {item.authors.length > 0 ? item.authors.join(', ') : '情報なし'}</p>
+              {/* ▼▼▼ サークル名をリンクに変更 ▼▼▼ */}
+              <p><strong>サークル:</strong> {item.circle ? (
+                <Link href={`/circle/${encodeURIComponent(item.circle)}`} className="text-blue-600 hover:underline">{item.circle}</Link>
+              ) : '情報なし'}</p>
+              {/* ▼▼▼ 作家名をリンクに変更 ▼▼▼ */}
+              <p><strong>作家:</strong> {item.authors.length > 0 ? (
+                item.authors.map((author, index) => (
+                  <span key={author}>
+                    <Link href={`/author/${encodeURIComponent(author)}`} className="text-blue-600 hover:underline">{author}</Link>
+                    {index < item.authors.length - 1 ? ', ' : ''}
+                  </span>
+                ))
+              ) : '情報なし'}</p>
               {item.publishedDate && <p><strong>発行日:</strong> {new Date(item.publishedDate).toLocaleDateString()}</p>}
               {item.genres && item.genres.length > 0 && (
                 <div className="flex flex-wrap gap-1 pt-1">
@@ -196,7 +209,7 @@ const EditModal = ({ item, onClose }: { item: Doujinshi; onClose: () => void }) 
 };
 
 // --- Main Bookshelf View ---
-export default function BookshelfView({ items, currentSearch, currentGenres }: BookshelfProps) {
+export default function BookshelfView({ items, currentSearch, currentGenres, pageTitle }: BookshelfProps) {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [modalItem, setModalItem] = useState<Doujinshi | null>(null);
@@ -210,12 +223,8 @@ export default function BookshelfView({ items, currentSearch, currentGenres }: B
   const [isComposing, setIsComposing] = useState(false); // IME flag
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null); // Debounce timer ref
 
-  useEffect(() => {
-    setLocalItems(items);
-  }, [items]);
-  useEffect(() => {
-    setSearchTerm(currentSearch);
-  }, [currentSearch]);
+  useEffect(() => { setLocalItems(items); }, [items]);
+  useEffect(() => { setSearchTerm(currentSearch); }, [currentSearch]);
 
   const toggleSelectionMode = () => {
     setIsSelectionMode(!isSelectionMode);
@@ -314,9 +323,34 @@ export default function BookshelfView({ items, currentSearch, currentGenres }: B
   return (
     <main className="p-4" style={{ maxWidth: '1200px', margin: 'auto' }}>
       {/* --- Header --- */}
-      <div className="flex justify-between items-center mb-5">
-        <h1 className="text-xl sm:text-2xl font-bold">所持同人誌一覧</h1>
-        <div className="flex items-center space-x-2">
+      <div className="flex justify-between items-center mb-5 gap-4"> {/* gapを追加 */}
+        {/* ▼▼▼ タイトル部分 ▼▼▼ */}
+        <div className="flex items-center min-w-0"> {/* 折り返し防止のため min-w-0 */}
+          {/* トップページでない場合に「戻る」リンクを表示 */}
+          {pathname !== '/' && (
+            <Link href="/" className="mr-3 text-gray-500 hover:text-gray-700" title="本棚トップへ">
+              <Home className="w-5 h-5" />
+            </Link>
+          )}
+          <h1 className="text-xl sm:text-2xl font-bold truncate">
+            {pageTitle || '所持同人誌一覧'}
+          </h1>
+        </div>
+
+        {/* Buttons Section */}
+        <div className="flex items-center space-x-2 flex-shrink-0">
+          {/* サークル一覧と作家一覧へのリンク */}
+          <>
+            <Link href="/circles" className="flex items-center justify-center w-10 sm:w-auto px-3 py-1.5 text-xs sm:text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700" title="サークル一覧">
+              <Library className="w-4 h-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">サークル</span>
+            </Link>
+            <Link href="/authors" className="flex items-center justify-center w-10 sm:w-auto px-3 py-1.5 text-xs sm:text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700" title="作家一覧">
+              <Users className="w-4 h-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">作家</span>
+            </Link>
+          </>
+
           {isSelectionMode ? (
             <>
               <button onClick={handleAddToList} disabled={selectedItems.size === 0} className="flex items-center justify-center w-10 sm:w-auto px-3 py-1.5 text-xs sm:text-sm bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-teal-300 disabled:cursor-not-allowed">

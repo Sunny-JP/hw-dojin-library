@@ -8,38 +8,35 @@ type SearchParams = {
   genres?: string | string[];
 };
 
-// props の型定義で searchParams が Promise かもしれないことを示す
+// props の型定義
 type PageProps = {
-  // searchParams が Promise<SearchParams | undefined> 型になる可能性
-  searchParams: Promise<SearchParams | undefined>; 
+  searchParams: Promise<SearchParams | undefined>;
 };
 
-export default async function HomePage(props: PageProps) { // props を受け取る
-  
-  // ▼▼▼ props.searchParams を await してからアクセスする ▼▼▼
-  const resolvedSearchParams = await props.searchParams; 
+export default async function HomePage(props: PageProps) {
+
+  const resolvedSearchParams = await props.searchParams;
   const search = resolvedSearchParams?.search || '';
-  const rawGenres = resolvedSearchParams?.genres;
-  // ▲▲▲---------------------------------------------▲▲▲
+  const rawGenres = resolvedSearchParams?.genres; // Keep rawGenres for array conversion
+
+  // クライアントコンポーネントと getDoujinshiList の両方で使う genres 配列を作成
+  const currentGenres = Array.isArray(rawGenres)
+    ? rawGenres
+    : rawGenres ? [rawGenres] : []; // Ensure it's always string[]
 
   let doujinshiList: DoujinshiFromDB[] = [];
   try {
-    // 取得した値を getDoujinshiList に渡す
-    doujinshiList = await getDoujinshiList(search, rawGenres);
+    // ▼▼▼ rawGenres の代わりに currentGenres (string[]) を渡す ▼▼▼
+    doujinshiList = await getDoujinshiList(search, currentGenres);
   } catch (error) {
     console.error(error);
   }
 
-  // クライアントコンポーネント用の genres 配列を作成
-  const currentGenres = Array.isArray(rawGenres)
-    ? rawGenres
-    : rawGenres ? [rawGenres] : [];
-
   return (
-    <BookshelfView 
-      items={doujinshiList} 
-      currentSearch={search} 
-      currentGenres={currentGenres} 
+    <BookshelfView
+      items={doujinshiList}
+      currentSearch={search}
+      currentGenres={currentGenres} // Pass the same array to the client
     />
   );
 }
