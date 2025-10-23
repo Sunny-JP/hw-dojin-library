@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
         protocol: 'http',
         hostname: 'host.docker.internal',
         port: '9000',
-        pathname: `/${process.env.MINIO_BUCKET_NAME || 'doujinshi-thumbnails'}/**`,
+        pathname: `/${process.env.S3_BUCKET_NAME || 'doujinshi-thumbnails'}/**`,
       },
     ],
   },

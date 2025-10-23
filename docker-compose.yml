@@ -13,8 +13,10 @@ services:
     env_file:
       - .env
     depends_on:
-      - db
-      - minio-init
+      db:
+        condition: service_started
+      rustfs-init:
+        condition: service_completed_successfully
     networks:
       - doujin-net
 
@@ -29,41 +31,74 @@ services:
       - .env
     ports:
       - "5432:5432"
+    healthcheck: # DBのヘルスチェックを追加 (appの起動前にDB準備完了を待つため)
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres} || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
     networks:
       - doujin-net
 
-  # MinIO (S3互換ストレージ)
+  # RustFS
   storage:
-    image: minio/minio:latest
+    image: rustfs/rustfs:latest
     container_name: doujin-storage
-    command: server /data --console-address ":9001"
+    command: /data 
     volumes:
-      - minio_data:/data
+      - rustfs_data:/data 
     env_file:
       - .env
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-rustfsadmin} 
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-rustfsadmin}
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_CORS_ALLOWED_ORIGINS: "*"
+      RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS: "*" 
+      RUSTFS_LOG_LEVEL: info
     ports:
       - "9000:9000"  # API用ポート
       - "9001:9001"  # 管理画面用ポート
     networks:
       - doujin-net
-  
-  minio-init:
-    image: minio/mc
-    container_name: minio-init
-    depends_on:
-      - storage # storage(MinIO)が起動してから実行する
-    networks:
-      - doujin-net
-    env_file:
-      - .env # .envファイルから変数を読み込む
-    volumes:
-      - ./minio-init:/init # 作成したスクリプトをコンテナにマウント
-    entrypoint: /bin/sh
-    command: -c " chmod +x /init/create-bucket.sh; /init/create-bucket.sh "
+    restart: unless-stopped
+    healthcheck:
+        test: ["CMD", "sh", "-c", "curl -f http://localhost:9000/health"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+        start_period: 40s
+
+  # RustFS初期化
+  rustfs-init:
+      image: amazon/aws-cli:latest
+      container_name: rustfs-init
+      depends_on:
+        storage: 
+          condition: service_healthy
+      networks:
+        - doujin-net
+      env_file:
+        - .env
+      environment:
+        AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-rustfsadmin}
+        AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-rustfsadmin}
+        AWS_ENDPOINT_URL: http://storage:9000
+        AWS_DEFAULT_REGION: us-east-1
+      volumes:
+        # policy.json と init-rustfs.sh の両方をマウント
+        - ./rustfs-init:/aws/config 
+      # entrypoint を /bin/sh に変更
+      entrypoint: /bin/sh
+      # command でスクリプトを実行
+      command: -c "chmod +x /aws/config/init-rustfs.sh && /aws/config/init-rustfs.sh"
 
 volumes:
   postgres_data:
-  minio_data:
+  rustfs_data: # 新しいボリューム定義
 
 networks:
   doujin-net:
+    driver: bridge
