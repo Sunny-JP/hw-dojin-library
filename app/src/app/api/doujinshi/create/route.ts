@@ -5,7 +5,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
 import crypto from 'crypto';
 
-const BUCKET_NAME = process.env.MINIO_BUCKET_NAME!;
+const BUCKET_NAME = process.env.S3_BUCKET_NAME!;
 
 export async function POST(req: Request) {
   try {
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
       await s3Client.send(putCommand);
       
       // 3. 保存先のURLを生成
-      thumbnailUrl = `${process.env.MINIO_PUBLIC_ENDPOINT}/${BUCKET_NAME}/${filename}`;
+      thumbnailUrl = `${process.env.S3_PUBLIC_ENDPOINT}/${BUCKET_NAME}/${filename}`;
     }
 
     // 4. データベースに保存
