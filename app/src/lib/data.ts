@@ -1,33 +1,15 @@
 import { sql } from '@/lib/db';
+import type { Doujinshi } from '@/types'; 
 
-export type DoujinshiFromDB = {
-  id: string;
-  title: string;
-  circle: string | null;
-  authors: string[];
-  genres: string[];
-  publishedDate: string; 
-  thumbnailUrl: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-// --- ▼▼▼ ここから修正 ▼▼▼ ---
-
-/**
- * ユニークなサークル名リストを取得 (NULLを除く)
- */
+// --- ユニークリスト取得関数 ---
 export async function getUniqueCircles(): Promise<string[]> {
   try {
-    // 1. 型ヒントを配列型 ({ circle: string }[]) に修正
-    // 2. { rows } の分割代入をやめ、結果を直接 rows 変数に格納
     const rows = await sql<{ circle: string }[]>`
       SELECT DISTINCT circle 
       FROM "Doujinshi" 
       WHERE circle IS NOT NULL AND circle != ''
       ORDER BY circle ASC;
     `;
-    // 3. これで row の型が正しく推論される
     return rows.map((row) => row.circle);
   } catch (error) {
     console.error('Database Error (getUniqueCircles):', error);
@@ -35,12 +17,8 @@ export async function getUniqueCircles(): Promise<string[]> {
   }
 }
 
-/**
- * ユニークな作家名リストを取得
- */
 export async function getUniqueAuthors(): Promise<string[]> {
   try {
-    // 同様に修正
     const rows = await sql<{ author: string }[]>`
       SELECT DISTINCT unnest(authors) AS author
       FROM "Doujinshi"
@@ -54,16 +32,13 @@ export async function getUniqueAuthors(): Promise<string[]> {
   }
 }
 
-// --- ▲▲▲ 修正ここまで ▲▲▲ ---
-
-
-// getDoujinshiList 関数 (変更なし)
+// --- 本棚リスト取得関数 (フィルタ機能付き) ---
 export async function getDoujinshiList(
   search?: string,
   genres?: string[],
   circle?: string,
   author?: string
-): Promise<DoujinshiFromDB[]> {
+): Promise<Doujinshi[]> {
   try {
     let query = sql`
       SELECT 
@@ -74,6 +49,7 @@ export async function getDoujinshiList(
     `;
     const conditions = [];
 
+    // テキスト検索
     if (search) {
       conditions.push(sql`(
         title ILIKE ${'%' + search + '%'} OR
@@ -81,16 +57,20 @@ export async function getDoujinshiList(
         ${search} = ANY(authors)
       )`);
     }
+    // ジャンル検索
     if (genres && genres.length > 0) {
       conditions.push(sql`genres @> ARRAY[${genres}]::text[]`);
     }
+    // サークルフィルタ
     if (circle) {
       conditions.push(sql`circle = ${circle}`);
     }
+    // 作家フィルタ
     if (author) {
       conditions.push(sql`${author} = ANY(authors)`);
     }
 
+    // 条件結合
     if (conditions.length > 0) {
       query = sql`${query} WHERE ${conditions[0]}`;
       for (let i = 1; i < conditions.length; i++) {
@@ -100,7 +80,7 @@ export async function getDoujinshiList(
     query = sql`${query} ORDER BY "createdAt" DESC`;
 
     const result = await query;
-    const rows = result as unknown as DoujinshiFromDB[]; 
+    const rows = result as unknown as Doujinshi[]; 
     return rows;
 
   } catch (error) {
