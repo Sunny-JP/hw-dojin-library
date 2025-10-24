@@ -1,33 +1,54 @@
-import { getUniqueAuthors } from '@/lib/data';
-import Link from 'next/link';
-import { Home } from 'lucide-react';
+'use client'; // クライアントコンポーネント宣言
 
-export default async function AuthorsPage() {
-  let authors: string[] = [];
-  try {
-    authors = await getUniqueAuthors();
-  } catch (error) {
-    console.error(error);
-  }
+import { useState, useEffect } from 'react'; // Reactフックをインポート
+import Link from 'next/link';
+import Header from '@/components/Header';
+import AddModal from '@/components/AddModal'; // 正しいパスからインポート
+import { fetchAuthorsAction } from '@/lib/actions'; // サーバーアクションをインポート
+
+// async を削除
+export default function AuthorsPage() {
+  const [authors, setAuthors] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false); // useState はここで呼び出す
+
+  // useEffect 内でサーバーアクションを呼び出してデータを取得
+  useEffect(() => {
+    async function loadAuthors() {
+      setLoading(true); // ローディング開始
+      try {
+        const fetchedAuthors = await fetchAuthorsAction();
+        setAuthors(fetchedAuthors);
+      } catch (error) {
+        console.error("Failed to load authors:", error);
+        // エラーハンドリング (例: エラーメッセージ表示)
+      } finally {
+        setLoading(false); // ローディング終了
+      }
+    }
+    loadAuthors();
+  }, []); // 初回レンダリング時にのみ実行
 
   return (
-    <main className="p-4 max-w-xl mx-auto">
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="text-2xl font-bold">作家一覧</h1>
-        <Link href="/" className="flex items-center text-sm text-blue-600 hover:underline">
-          <Home className="w-4 h-4 mr-1" />
-          本棚へ戻る
-        </Link>
-      </div>
-      {authors.length === 0 ? (
-        <p>登録されている作家はありません。</p>
+    // レイアウトクラスを追加
+    <main className="p-4 mx-auto" style={{ maxWidth: '1200px' }}>
+      <Header
+        pageTitle="作家一覧"
+        setShowAddModal={setShowAddModal}
+        // 他のオプショナルなPropsは渡さない
+      />
+
+      {loading ? (
+        <p className="text-center text-gray-500 py-10">読み込み中...</p>
+      ) : authors.length === 0 ? (
+        <p className="text-center text-gray-500 py-10">登録されている作家はありません。</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-gray-200 dark:divide-gray-700">
           {authors.map((author) => (
-            <li key={author}>
-              <Link 
-                href={`/author/${encodeURIComponent(author)}`} 
-                className="text-blue-600 hover:underline"
+            <li key={author} className="py-3">
+              <Link
+                href={`/author/${encodeURIComponent(author)}`}
+                className="text-blue-600 hover:text-blue-800 hover:underline text-sm sm:text-base dark:text-blue-400 dark:hover:text-blue-300"
               >
                 {author}
               </Link>
@@ -35,6 +56,8 @@ export default async function AuthorsPage() {
           ))}
         </ul>
       )}
+
+      {showAddModal && <AddModal onClose={() => setShowAddModal(false)} />}
     </main>
   );
 }

@@ -1,35 +1,52 @@
-import { getUniqueCircles } from '@/lib/data';
-import Link from 'next/link';
-import { Home } from 'lucide-react';
+'use client'; // クライアントコンポーネント宣言
 
-export default async function CirclesPage() {
-  let circles: string[] = [];
-  try {
-    circles = await getUniqueCircles();
-  } catch (error) {
-    console.error(error);
-    // TODO: Add error handling UI
-  }
+import { useState, useEffect } from 'react'; // Reactフックをインポート
+import Link from 'next/link';
+import Header from '@/components/Header';
+import AddModal from '@/components/AddModal'; // 正しいパスからインポート
+import { fetchCirclesAction } from '@/lib/actions'; // サーバーアクションをインポート
+
+// async を削除
+export default function CirclesPage() {
+  const [circles, setCircles] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false); // useState はここで呼び出す
+
+  // useEffect 内でサーバーアクションを呼び出してデータを取得
+  useEffect(() => {
+    async function loadCircles() {
+      setLoading(true); // ローディング開始
+      try {
+        const fetchedCircles = await fetchCirclesAction();
+        setCircles(fetchedCircles);
+      } catch (error) {
+        console.error("Failed to load circles:", error);
+      } finally {
+        setLoading(false); // ローディング終了
+      }
+    }
+    loadCircles();
+  }, []); // 初回レンダリング時にのみ実行
 
   return (
-    <main className="p-4 max-w-xl mx-auto">
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="text-2xl font-bold">サークル一覧</h1>
-        <Link href="/" className="flex items-center text-sm text-blue-600 hover:underline">
-          <Home className="w-4 h-4 mr-1" />
-          本棚へ戻る
-        </Link>
-      </div>
-      {circles.length === 0 ? (
-        <p>登録されているサークルはありません。</p>
+    // レイアウトクラスを追加
+    <main className="p-4 mx-auto" style={{ maxWidth: '1200px' }}>
+      <Header
+        pageTitle="サークル一覧"
+        setShowAddModal={setShowAddModal}
+      />
+
+      {loading ? (
+        <p className="text-center text-gray-500 py-10">読み込み中...</p>
+      ) : circles.length === 0 ? (
+        <p className="text-center text-gray-500 py-10">登録されているサークルはありません。</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-gray-200 dark:divide-gray-700">
           {circles.map((circle) => (
-            <li key={circle}>
-              {/* URLエンコードしてリンクを作成 */}
-              <Link 
-                href={`/circle/${encodeURIComponent(circle)}`} 
-                className="text-blue-600 hover:underline"
+            <li key={circle} className="py-3">
+              <Link
+                href={`/circle/${encodeURIComponent(circle)}`}
+                className="text-blue-600 hover:text-blue-800 hover:underline text-sm sm:text-base dark:text-blue-400 dark:hover:text-blue-300"
               >
                 {circle}
               </Link>
@@ -37,6 +54,8 @@ export default async function CirclesPage() {
           ))}
         </ul>
       )}
+
+      {showAddModal && <AddModal onClose={() => setShowAddModal(false)} />}
     </main>
   );
 }

@@ -142,7 +142,7 @@ export async function updateItemAction(formData: FormData) {
 
     // newThumbnailUrl が設定されている（新しい画像がアップロードされた）場合のみ thumbnailUrl を更新
     if (newThumbnailUrl) {
-       await sql`
+      await sql`
         UPDATE "Doujinshi" SET
           title = ${title},
           circle = ${circle || null},
@@ -155,7 +155,7 @@ export async function updateItemAction(formData: FormData) {
       `;
     } else {
       // 新しい画像がない場合は thumbnailUrl を更新しない
-       await sql`
+      await sql`
         UPDATE "Doujinshi" SET
           title = ${title},
           circle = ${circle || null},
@@ -193,5 +193,42 @@ export async function updateItemAction(formData: FormData) {
   } catch (error) {
     console.error('更新エラー:', error);
     return { error: 'アイテムの更新に失敗しました。' };
+  }
+}
+
+/**
+ * サークルリストを取得するサーバーアクション
+ */
+export async function fetchCirclesAction(): Promise<string[]> {
+  try {
+    const rows = await sql<{ circle: string }[]>`
+      SELECT DISTINCT circle 
+      FROM "Doujinshi" 
+      WHERE circle IS NOT NULL AND circle != ''
+      ORDER BY circle ASC;
+    `;
+    return rows.map((row) => row.circle);
+  } catch (error) {
+    console.error("Failed to fetch circles:", error);
+    return []; 
+  }
+}
+
+/**
+ * 作家リストを取得するサーバーアクション
+ */
+export async function fetchAuthorsAction(): Promise<string[]> {
+  try {
+    const rows = await sql<{ author: string }[]>`
+      SELECT DISTINCT unnest(authors) AS author
+      FROM "Doujinshi"
+      WHERE array_length(authors, 1) > 0
+      ORDER BY author ASC;
+    `;
+    return rows.map((row) => row.author);
+
+  } catch (error) {
+    console.error("Failed to fetch authors:", error);
+    return []; 
   }
 }

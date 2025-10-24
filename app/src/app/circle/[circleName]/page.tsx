@@ -1,5 +1,5 @@
 import { getDoujinshiList } from '@/lib/data';
-import type { DoujinshiFromDB } from '@/lib/data';
+import type { Doujinshi } from '@/types';
 import BookshelfView from '@/components/BookshelfView';
 
 // searchParams の型定義
@@ -36,7 +36,7 @@ export default async function CircleBookshelfPage(props: PageProps) { // props �
     ? rawGenres
     : rawGenres ? [rawGenres] : [];
   
-  let doujinshiList: DoujinshiFromDB[] = []; 
+  let doujinshiList: Doujinshi[] = []; 
   try {
     // getDoujinshiList に circle フィルタを渡す
     doujinshiList = await getDoujinshiList(search, genres, circleName); 
@@ -49,7 +49,8 @@ export default async function CircleBookshelfPage(props: PageProps) { // props �
       items={doujinshiList} 
       currentSearch={search} 
       currentGenres={genres}
-      pageTitle={`${circleName}`} // ページタイトルを渡す
+      pageTitle={`${circleName}`}
+      filterContext={{ type: 'circle', value: circleName }}
     />
   );
 }

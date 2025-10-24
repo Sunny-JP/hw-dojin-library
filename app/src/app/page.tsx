@@ -1,5 +1,5 @@
 import { getDoujinshiList } from '@/lib/data';
-import type { DoujinshiFromDB } from '@/lib/data';
+import type { Doujinshi } from '@/types';
 import BookshelfView from '@/components/BookshelfView';
 
 // searchParams の型定義
@@ -24,7 +24,7 @@ export default async function HomePage(props: PageProps) {
     ? rawGenres
     : rawGenres ? [rawGenres] : []; // Ensure it's always string[]
 
-  let doujinshiList: DoujinshiFromDB[] = [];
+  let doujinshiList: Doujinshi[] = [];
   try {
     // ▼▼▼ rawGenres の代わりに currentGenres (string[]) を渡す ▼▼▼
     doujinshiList = await getDoujinshiList(search, currentGenres);
